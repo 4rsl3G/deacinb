@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Drama Shorts Feed</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body, html { background-color: #000; color: #fff; height: 100%; overflow: hidden; }
+
+        /* Container Scroll TikTok */
+        .feed-container {
+            height: 100dvh;
+            width: 100%;
+            overflow-y: scroll;
+            scroll-snap-type: y mandatory;
+            scroll-behavior: smooth;
+            scrollbar-width: none;
+        }
+        .feed-container::-webkit-scrollbar { display: none; }
+
+        /* Layout Tiap Video */
+        .video-item {
+            height: 100dvh;
+            width: 100%;
+            scroll-snap-align: start;
+            position: relative;
+            background-color: #111;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain; /* Ubah ke cover jika ingin penuh layar tanpa tepi hitam */
+            cursor: pointer;
+        }
+
+        /* Teks di Kiri Bawah */
+        .ui-bottom {
+            position: absolute;
+            bottom: 20px;
+            left: 15px;
+            right: 70px;
+            z-index: 10;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+        }
+        .ui-bottom h2 { font-size: 1.1rem; margin-bottom: 5px; font-weight: bold; }
+        .ui-bottom p { font-size: 0.9rem; opacity: 0.9; }
+
+        /* Tombol di Kanan Bawah */
+        .ui-sidebar {
+            position: absolute;
+            bottom: 30px;
+            right: 15px;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            align-items: center;
+        }
+        .action-btn {
+            background: rgba(0,0,0,0.4);
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(5px);
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+
+        /* Pesan Status */
+        .status-message {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 1.2rem;
+            z-index: 1;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="feed-container" id="feed">
+        <div class="status-message" id="loading">Memuat drama terbaik untukmu...</div>
+    </div>
+
+    <script>
+        const feedContainer = document.getElementById('feed');
+        const loadingText = document.getElementById('loading');
+
+        async function loadFeed() {
+            try {
+                // Memanggil endpoint Express.js
+                const response = await fetch('/api/feed');
+                const result = await response.json();
+
+                if (!result.success || result.data.length === 0) {
+                    loadingText.innerText = "Gagal memuat video atau feed kosong.";
+                    return;
+                }
+
+                loadingText.style.display = 'none';
+
+                // Render setiap video ke dalam container
+                result.data.forEach(drama => {
+                    const videoHTML = `
+                        <div class="video-item">
+                            <video src="${drama.videoUrl}" poster="${drama.coverUrl}" loop playsinline preload="metadata"></video>
+                            
+                            <div class="ui-bottom">
+                                <h2>${drama.title}</h2>
+                                <p>${drama.desc}</p>
+                            </div>
+
+                            <div class="ui-sidebar">
+                                <div class="action-btn">❤️</div>
+                                <div class="action-btn">💬</div>
+                                <div class="action-btn">📤</div>
+                            </div>
+                        </div>
+                    `;
+                    feedContainer.insertAdjacentHTML('beforeend', videoHTML);
+                });
+
+                setupIntersectionObserver();
+
+            } catch (error) {
+                console.error("Fetch error:", error);
+                loadingText.innerText = "Terjadi kesalahan pada server.";
+            }
+        }
+
+        // Observer agar video otomatis Play/Pause saat di-scroll (Core Mekanik TikTok)
+        function setupIntersectionObserver() {
+            const videos = document.querySelectorAll('video');
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    const video = entry.target;
+                    if (entry.isIntersecting) {
+                        // Play video ketika masuk layar
+                        video.play().catch(e => console.log("Autoplay dicegah browser, perlu interaksi user"));
+                    } else {
+                        // Pause dan kembalikan ke awal ketika keluar layar
+                        video.pause();
+                        video.currentTime = 0; 
+                    }
+                });
+            }, {
+                threshold: 0.7 // Eksekusi saat 70% video terlihat
+            });
+
+            videos.forEach(video => {
+                observer.observe(video);
+                
+                // Play/Pause manual saat diklik
+                video.addEventListener('click', () => {
+                    if (video.paused) video.play();
+                    else video.pause();
+                });
+            });
+        }
+
+        // Mulai aplikasi
+        loadFeed();
+    </script>
+</body>
+</html>
