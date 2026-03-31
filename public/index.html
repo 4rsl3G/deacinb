@@ -1,174 +1,300 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" data-bs-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Drama Shorts Feed</title>
+    <title>DramaBox Clone</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
-        body, html { background-color: #000; color: #fff; height: 100%; overflow: hidden; }
+        body, html { height: 100%; overflow: hidden; background-color: #000; }
+        
+        /* Area Konten Utama */
+        .app-container { height: calc(100dvh - 60px); overflow-y: auto; overflow-x: hidden; }
+        
+        /* Sembunyikan scrollbar tapi tetap bisa scroll */
+        .app-container::-webkit-scrollbar { display: none; }
+        .app-container { -ms-overflow-style: none; scrollbar-width: none; }
 
-        /* Container Scroll TikTok */
-        .feed-container {
-            height: 100dvh;
-            width: 100%;
-            overflow-y: scroll;
-            scroll-snap-type: y mandatory;
-            scroll-behavior: smooth;
-            scrollbar-width: none;
-        }
-        .feed-container::-webkit-scrollbar { display: none; }
+        /* --- TIKTOK FEED STYLE --- */
+        .feed-container { height: 100%; scroll-snap-type: y mandatory; }
+        .video-item { height: 100%; width: 100%; scroll-snap-align: start; position: relative; background: #111; display: flex; align-items: center; }
+        .video-item video { width: 100%; height: 100%; object-fit: cover; }
+        .ui-bottom { position: absolute; bottom: 20px; left: 15px; right: 70px; text-shadow: 1px 1px 3px #000; z-index: 10; }
+        .ui-bottom h5 { font-weight: bold; margin-bottom: 2px; }
+        .ui-bottom p { font-size: 0.85rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .ui-sidebar { position: absolute; bottom: 30px; right: 10px; z-index: 10; display: flex; flex-direction: column; gap: 15px; }
+        .action-btn { background: rgba(0,0,0,0.5); border-radius: 50%; width: 45px; height: 45px; display: flex; justify-content: center; align-items: center; color: white; font-size: 1.2rem; cursor: pointer; backdrop-filter: blur(5px); }
 
-        /* Layout Tiap Video */
-        .video-item {
-            height: 100dvh;
-            width: 100%;
-            scroll-snap-align: start;
-            position: relative;
-            background-color: #111;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
+        /* --- EXPLORE & SEARCH STYLE --- */
+        .page-view { padding: 15px; padding-bottom: 30px; }
+        .drama-card { cursor: pointer; transition: transform 0.2s; background: #1a1a1a; border: none; }
+        .drama-card:active { transform: scale(0.95); }
+        .drama-card img { height: 200px; object-fit: cover; border-radius: 8px 8px 0 0; }
+        .drama-card .card-body { padding: 10px; }
+        .drama-card .card-title { font-size: 0.9rem; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .section-title { font-size: 1.2rem; font-weight: bold; border-left: 4px solid #e50914; padding-left: 10px; margin-bottom: 15px; margin-top: 20px; }
 
-        video {
-            width: 100%;
-            height: 100%;
-            object-fit: contain; /* Ubah ke cover jika ingin penuh layar tanpa tepi hitam */
-            cursor: pointer;
-        }
+        /* --- BOTTOM NAVBAR --- */
+        .bottom-nav { height: 60px; background-color: #0a0a0a; border-top: 1px solid #222; display: flex; justify-content: space-around; align-items: center; position: fixed; bottom: 0; width: 100%; z-index: 1000; }
+        .nav-item { color: #888; text-align: center; font-size: 0.8rem; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px; transition: color 0.3s; }
+        .nav-item i { font-size: 1.4rem; }
+        .nav-item.active { color: #fff; }
 
-        /* Teks di Kiri Bawah */
-        .ui-bottom {
-            position: absolute;
-            bottom: 20px;
-            left: 15px;
-            right: 70px;
-            z-index: 10;
-            text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
-        }
-        .ui-bottom h2 { font-size: 1.1rem; margin-bottom: 5px; font-weight: bold; }
-        .ui-bottom p { font-size: 0.9rem; opacity: 0.9; }
-
-        /* Tombol di Kanan Bawah */
-        .ui-sidebar {
-            position: absolute;
-            bottom: 30px;
-            right: 15px;
-            z-index: 10;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            align-items: center;
-        }
-        .action-btn {
-            background: rgba(0,0,0,0.4);
-            border-radius: 50%;
-            width: 45px;
-            height: 45px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            backdrop-filter: blur(5px);
-            font-size: 1.2rem;
-            cursor: pointer;
-        }
-
-        /* Pesan Status */
-        .status-message {
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            color: white;
-            font-size: 1.2rem;
-            z-index: 1;
-        }
+        /* --- MODAL PLAYER --- */
+        #playerModal .modal-content { background-color: #000; }
+        #playerVideo { width: 100%; max-height: 80vh; background: #000; }
     </style>
 </head>
 <body>
 
-    <div class="feed-container" id="feed">
-        <div class="status-message" id="loading">Memuat drama terbaik untukmu...</div>
+    <div class="app-container" id="mainContainer">
+        
+        <div id="view-home" class="feed-container h-100">
+            <div class="d-flex justify-content-center align-items-center h-100" id="feedLoading">
+                <div class="spinner-border text-danger" role="status"></div>
+            </div>
+            </div>
+
+        <div id="view-explore" class="page-view d-none">
+            <h3 class="mb-4"><i class="fa-solid fa-compass text-danger"></i> Temukan Drama</h3>
+            <div id="exploreContent">
+                <div class="text-center mt-5"><div class="spinner-border text-danger" role="status"></div></div>
+            </div>
+        </div>
+
+        <div id="view-search" class="page-view d-none">
+            <div class="input-group mb-4 mt-2">
+                <input type="text" id="searchInput" class="form-control bg-dark text-light border-secondary" placeholder="Cari judul drama...">
+                <button class="btn btn-danger" onclick="executeSearch()"><i class="fa-solid fa-search"></i></button>
+            </div>
+            <div id="searchLoading" class="text-center d-none"><div class="spinner-border text-danger" role="status"></div></div>
+            <div class="row g-3" id="searchResults">
+                <div class="text-center text-muted mt-5 w-100">Ketik kata kunci untuk mencari drama.</div>
+            </div>
+        </div>
+
     </div>
 
+    <div class="bottom-nav">
+        <div class="nav-item active" onclick="switchTab('home', this)">
+            <i class="fa-solid fa-house"></i>
+            <span>Beranda</span>
+        </div>
+        <div class="nav-item" onclick="switchTab('explore', this)">
+            <i class="fa-solid fa-fire"></i>
+            <span>Eksplor</span>
+        </div>
+        <div class="nav-item" onclick="switchTab('search', this)">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <span>Cari</span>
+        </div>
+    </div>
+
+    <div class="modal fade" id="playerModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title" id="playerTitle">Memuat...</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <div id="modalLoading" class="spinner-border text-danger my-5" role="status"></div>
+                    <video id="playerVideo" controls playsinline class="d-none"></video>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
     <script>
-        const feedContainer = document.getElementById('feed');
-        const loadingText = document.getElementById('loading');
+        // --- 1. TAB NAVIGATION LOGIC ---
+        function switchTab(tabId, element) {
+            // Update UI Nav
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            element.classList.add('active');
 
-        async function loadFeed() {
-            try {
-                // Memanggil endpoint Express.js
-                const response = await fetch('/api/feed');
-                const result = await response.json();
+            // Sembunyikan semua view
+            document.getElementById('view-home').classList.add('d-none');
+            document.getElementById('view-explore').classList.add('d-none');
+            document.getElementById('view-search').classList.add('d-none');
 
-                if (!result.success || result.data.length === 0) {
-                    loadingText.innerText = "Gagal memuat video atau feed kosong.";
-                    return;
-                }
+            // Tampilkan view yg dipilih
+            const view = document.getElementById(`view-${tabId}`);
+            view.classList.remove('d-none');
 
-                loadingText.style.display = 'none';
+            // Pause video di feed jika pindah tab
+            if(tabId !== 'home') {
+                document.querySelectorAll('#view-home video').forEach(v => v.pause());
+            }
 
-                // Render setiap video ke dalam container
-                result.data.forEach(drama => {
-                    const videoHTML = `
-                        <div class="video-item">
-                            <video src="${drama.videoUrl}" poster="${drama.coverUrl}" loop playsinline preload="metadata"></video>
-                            
-                            <div class="ui-bottom">
-                                <h2>${drama.title}</h2>
-                                <p>${drama.desc}</p>
-                            </div>
-
-                            <div class="ui-sidebar">
-                                <div class="action-btn">❤️</div>
-                                <div class="action-btn">💬</div>
-                                <div class="action-btn">📤</div>
-                            </div>
-                        </div>
-                    `;
-                    feedContainer.insertAdjacentHTML('beforeend', videoHTML);
-                });
-
-                setupIntersectionObserver();
-
-            } catch (error) {
-                console.error("Fetch error:", error);
-                loadingText.innerText = "Terjadi kesalahan pada server.";
+            // Lazy Load Data berdasarkan Tab
+            if (tabId === 'explore' && document.getElementById('exploreContent').innerHTML.includes('spinner')) {
+                loadExplore();
             }
         }
 
-        // Observer agar video otomatis Play/Pause saat di-scroll (Core Mekanik TikTok)
-        function setupIntersectionObserver() {
-            const videos = document.querySelectorAll('video');
+        // --- 2. LOAD FEED (HOME) ---
+        async function loadFeed() {
+            try {
+                const res = await fetch('/api/feed');
+                const result = await res.json();
+                const container = document.getElementById('view-home');
+                document.getElementById('feedLoading').remove();
+
+                result.data.forEach(drama => {
+                    const html = `
+                        <div class="video-item">
+                            <video src="${drama.videoUrl}" loop playsinline preload="metadata"></video>
+                            <div class="ui-bottom">
+                                <h5>${drama.title}</h5>
+                                <p>${drama.desc}</p>
+                            </div>
+                            <div class="ui-sidebar">
+                                <div class="action-btn"><i class="fa-solid fa-heart"></i></div>
+                                <div class="action-btn"><i class="fa-solid fa-comment"></i></div>
+                                <div class="action-btn"><i class="fa-solid fa-share"></i></div>
+                            </div>
+                        </div>
+                    `;
+                    container.insertAdjacentHTML('beforeend', html);
+                });
+                setupScrollObserver();
+            } catch (error) {
+                console.error("Feed error:", error);
+            }
+        }
+
+        function setupScrollObserver() {
+            const videos = document.querySelectorAll('.video-item video');
             const observer = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
-                    const video = entry.target;
                     if (entry.isIntersecting) {
-                        // Play video ketika masuk layar
-                        video.play().catch(e => console.log("Autoplay dicegah browser, perlu interaksi user"));
+                        entry.target.play().catch(e => console.log("Autoplay dicegah"));
                     } else {
-                        // Pause dan kembalikan ke awal ketika keluar layar
-                        video.pause();
-                        video.currentTime = 0; 
+                        entry.target.pause();
+                        entry.target.currentTime = 0;
                     }
                 });
-            }, {
-                threshold: 0.7 // Eksekusi saat 70% video terlihat
-            });
+            }, { threshold: 0.6 });
 
-            videos.forEach(video => {
-                observer.observe(video);
-                
-                // Play/Pause manual saat diklik
-                video.addEventListener('click', () => {
-                    if (video.paused) video.play();
-                    else video.pause();
-                });
+            videos.forEach(v => {
+                observer.observe(v);
+                v.addEventListener('click', () => v.paused ? v.play() : v.pause());
             });
         }
 
-        // Mulai aplikasi
-        loadFeed();
+        // --- 3. LOAD EXPLORE (Trending & Dubbing Indo) ---
+        async function loadExplore() {
+            try {
+                const res = await fetch('/api/explore');
+                const { data } = await res.json();
+                
+                const container = document.getElementById('exploreContent');
+                container.innerHTML = ''; // Clear loading
+
+                // Render per kategori
+                container.innerHTML += renderGrid('🔥 Sedang Trending', data.trending.slice(0, 6));
+                container.innerHTML += renderGrid('🇮🇩 Dubbing Indonesia', data.dubindo.slice(0, 6));
+                container.innerHTML += renderGrid('✨ Terbaru', data.latest.slice(0, 6));
+                
+            } catch (error) {
+                document.getElementById('exploreContent').innerHTML = '<div class="alert alert-danger">Gagal memuat data.</div>';
+            }
+        }
+
+        function renderGrid(title, items) {
+            let html = `<div class="section-title">${title}</div><div class="row g-2">`;
+            items.forEach(item => {
+                html += `
+                    <div class="col-6 col-md-4 col-lg-3">
+                        <div class="card drama-card text-bg-dark h-100" onclick="playDrama(${item.bookId}, '${item.bookName.replace(/'/g, "\\'")}')">
+                            <img src="${item.coverUrl || item.horizontalCoverUrl}" class="card-img-top" alt="Cover" onerror="this.src='https://via.placeholder.com/300x400?text=No+Cover'">
+                            <div class="card-body">
+                                <p class="card-title mb-0">${item.bookName}</p>
+                                <small class="text-danger"><i class="fa-solid fa-play"></i> Eps ${item.totalChapterNum}</small>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            html += `</div>`;
+            return html;
+        }
+
+        // --- 4. SEARCH LOGIC ---
+        async function executeSearch() {
+            const query = document.getElementById('searchInput').value;
+            if (!query) return;
+
+            document.getElementById('searchLoading').classList.remove('d-none');
+            document.getElementById('searchResults').innerHTML = '';
+
+            try {
+                const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+                const { data } = await res.json();
+                
+                document.getElementById('searchLoading').classList.add('d-none');
+                
+                if(data.length === 0) {
+                    document.getElementById('searchResults').innerHTML = '<div class="text-center w-100 mt-4">Drama tidak ditemukan.</div>';
+                    return;
+                }
+
+                document.getElementById('searchResults').innerHTML = renderGrid('Hasil Pencarian', data);
+
+            } catch (error) {
+                document.getElementById('searchLoading').classList.add('d-none');
+            }
+        }
+
+        // Biar bisa enter saat ngetik
+        document.getElementById('searchInput').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') executeSearch();
+        });
+
+        // --- 5. MODAL PLAYER LOGIC ---
+        let playerModalInstance = null;
+        const videoElement = document.getElementById('playerVideo');
+
+        document.addEventListener("DOMContentLoaded", () => {
+            playerModalInstance = new bootstrap.Modal(document.getElementById('playerModal'));
+            
+            // Stop video saat modal ditutup
+            document.getElementById('playerModal').addEventListener('hidden.bs.modal', () => {
+                videoElement.pause();
+                videoElement.src = '';
+            });
+
+            // Inisialisasi Beranda
+            loadFeed();
+        });
+
+        async function playDrama(bookId, title) {
+            document.getElementById('playerTitle').innerText = title;
+            document.getElementById('modalLoading').classList.remove('d-none');
+            videoElement.classList.add('d-none');
+            
+            playerModalInstance.show();
+
+            try {
+                const res = await fetch(`/api/play/${bookId}`);
+                const { success, streamUrl } = await res.json();
+
+                if (success) {
+                    document.getElementById('modalLoading').classList.add('d-none');
+                    videoElement.src = streamUrl;
+                    videoElement.classList.remove('d-none');
+                    videoElement.play();
+                } else {
+                    throw new Error("Gagal mengambil stream");
+                }
+            } catch (error) {
+                document.getElementById('modalLoading').classList.add('d-none');
+                document.getElementById('playerTitle').innerText = "Gagal memuat video :(";
+            }
+        }
     </script>
 </body>
 </html>
