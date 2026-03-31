@@ -1,0 +1,25 @@
+{
+  "name": "dramabox-tiktok-feed",
+  "version": "1.0.0",
+  "description": "Backend API DramaBox dengan antarmuka streaming UI bergaya TikTok",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2"
+  },
+  "engines": {
+    "node": ">=18.x"
+  },
+  "keywords": [
+    "dramabox",
+    "api",
+    "tiktok-ui",
+    "express",
+    "vercel"
+  ],
+  "author": "",
+  "license": "ISC"
+}
